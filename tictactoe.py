@@ -111,14 +111,27 @@ class TicTacToeLogic:
 class TicTacToeApp:
     """Graphical interface for playing Tic Tac Toe against the computer."""
 
+    BG_THEMES: List[Tuple[str, str, str]] = [
+        ("Deep Teal", "#162d3a", "#224254"),
+        ("Midnight Indigo", "#1b2240", "#29335c"),
+        ("Forest Slate", "#1b3329", "#284a3c"),
+        ("Classic Dark", "#1e1e2e", "#313244"),
+    ]
+
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("Tic Tac Toe - Player vs Computer")
-        self.root.geometry("420x540")
+        self.root.geometry("440x610")
         self.root.resizable(False, False)
-        self.root.configure(bg="#1e1e2e")
+
+        self.theme_index: int = 0
+        self.bg_color: str = self.BG_THEMES[self.theme_index][1]
+        self.surface_color: str = self.BG_THEMES[self.theme_index][2]
+        self.root.configure(bg=self.bg_color)
 
         self.logic = TicTacToeLogic()
+        self.player_name: str = "Player"
+        self.player_name_var = tk.StringVar(root, value=self.player_name)
         self.scores = {"X": 0, "O": 0, "Draw": 0}
         self.buttons: List[tk.Button] = []
 
@@ -126,14 +139,58 @@ class TicTacToeApp:
 
     def _build_ui(self) -> None:
         # Title Label
-        title_label = tk.Label(
+        self.title_label = tk.Label(
             self.root,
             text="Tic Tac Toe",
             font=("Segoe UI", 22, "bold"),
             fg="#cdd6f4",
-            bg="#1e1e2e",
+            bg=self.bg_color,
         )
-        title_label.pack(pady=(16, 4))
+        self.title_label.pack(pady=(12, 4))
+
+        # Player Name Entry Row
+        self.name_frame = tk.Frame(self.root, bg=self.bg_color)
+        self.name_frame.pack(pady=(0, 6))
+
+        self.name_prompt_label = tk.Label(
+            self.name_frame,
+            text="Player Name:",
+            font=("Segoe UI", 10, "bold"),
+            fg="#cdd6f4",
+            bg=self.bg_color,
+        )
+        self.name_prompt_label.pack(side="left", padx=(0, 6))
+
+        self.name_entry = tk.Entry(
+            self.name_frame,
+            textvariable=self.player_name_var,
+            font=("Segoe UI", 10),
+            width=16,
+            bg=self.surface_color,
+            fg="#cdd6f4",
+            insertbackground="#cdd6f4",
+            relief="flat",
+            bd=4,
+        )
+        self.name_entry.pack(side="left", padx=(0, 6))
+        self.name_entry.bind("<Return>", lambda _e: self.apply_player_name())
+        self.name_entry.bind("<FocusOut>", lambda _e: self.apply_player_name())
+
+        self.set_name_btn = tk.Button(
+            self.name_frame,
+            text="Set Name",
+            font=("Segoe UI", 9, "bold"),
+            bg="#89b4fa",
+            fg="#11111b",
+            activebackground="#b4befe",
+            activeforeground="#11111b",
+            relief="flat",
+            padx=8,
+            pady=2,
+            cursor="hand2",
+            command=self.apply_player_name,
+        )
+        self.set_name_btn.pack(side="left")
 
         # Scoreboard Label
         self.score_label = tk.Label(
@@ -141,35 +198,35 @@ class TicTacToeApp:
             text=self._score_text(),
             font=("Segoe UI", 11),
             fg="#a6adc8",
-            bg="#1e1e2e",
+            bg=self.bg_color,
         )
         self.score_label.pack(pady=(0, 8))
 
         # Status / Winner Banner
         self.status_label = tk.Label(
             self.root,
-            text="Your Turn (X) — Click any square",
+            text=self._turn_text(),
             font=("Segoe UI", 13, "bold"),
             fg="#89b4fa",
-            bg="#313244",
+            bg=self.surface_color,
             padx=12,
             pady=8,
-            width=32,
+            width=34,
         )
-        self.status_label.pack(pady=(0, 14))
+        self.status_label.pack(pady=(0, 12))
 
         # 3x3 Grid Frame
-        grid_frame = tk.Frame(self.root, bg="#1e1e2e")
-        grid_frame.pack(pady=4)
+        self.grid_frame = tk.Frame(self.root, bg=self.bg_color)
+        self.grid_frame.pack(pady=4)
 
         for i in range(9):
             btn = tk.Button(
-                grid_frame,
+                self.grid_frame,
                 text="",
                 font=("Segoe UI", 26, "bold"),
                 width=4,
                 height=1,
-                bg="#313244",
+                bg=self.surface_color,
                 fg="#cdd6f4",
                 activebackground="#45475a",
                 activeforeground="#cdd6f4",
@@ -182,51 +239,117 @@ class TicTacToeApp:
             btn.grid(row=row, column=col, padx=5, pady=5, ipadx=8, ipady=8)
             self.buttons.append(btn)
 
-        # Bottom Control Bar (New Game + Exit Buttons)
-        controls_frame = tk.Frame(self.root, bg="#1e1e2e")
-        controls_frame.pack(fill="x", padx=32, pady=(20, 14))
+        # Bottom Control Bar (New Game + Background + Exit Buttons)
+        self.controls_frame = tk.Frame(self.root, bg=self.bg_color)
+        self.controls_frame.pack(fill="x", padx=24, pady=(16, 12))
 
         self.new_game_btn = tk.Button(
-            controls_frame,
+            self.controls_frame,
             text="New Game",
-            font=("Segoe UI", 11, "bold"),
+            font=("Segoe UI", 10, "bold"),
             bg="#89b4fa",
             fg="#11111b",
             activebackground="#b4befe",
             activeforeground="#11111b",
             relief="flat",
-            padx=18,
+            padx=12,
             pady=8,
             cursor="hand2",
             command=self.reset_game,
         )
-        self.new_game_btn.pack(side="left", expand=True, fill="x", padx=(0, 8))
+        self.new_game_btn.pack(side="left", expand=True, fill="x", padx=(0, 6))
+
+        self.bg_btn = tk.Button(
+            self.controls_frame,
+            text="Change BG",
+            font=("Segoe UI", 10, "bold"),
+            bg="#cba6f7",
+            fg="#11111b",
+            activebackground="#d9bcef",
+            activeforeground="#11111b",
+            relief="flat",
+            padx=12,
+            pady=8,
+            cursor="hand2",
+            command=self.change_background_color,
+        )
+        self.bg_btn.pack(side="left", expand=True, fill="x", padx=6)
 
         self.exit_btn = tk.Button(
-            controls_frame,
+            self.controls_frame,
             text="Exit",
-            font=("Segoe UI", 11, "bold"),
+            font=("Segoe UI", 10, "bold"),
             bg="#f38ba8",
             fg="#11111b",
             activebackground="#eba0ac",
             activeforeground="#11111b",
             relief="flat",
-            padx=18,
+            padx=12,
             pady=8,
             cursor="hand2",
             command=self.exit_game,
         )
-        self.exit_btn.pack(side="right", expand=True, fill="x", padx=(8, 0))
+        self.exit_btn.pack(side="right", expand=True, fill="x", padx=(6, 0))
+
+    def _turn_text(self) -> str:
+        return f"{self.player_name}'s Turn (X) — Click any square"
 
     def _score_text(self) -> str:
         return (
-            f"You (X): {self.scores['X']}   |   "
+            f"{self.player_name} (X): {self.scores['X']}   |   "
             f"Computer (O): {self.scores['O']}   |   "
             f"Draws: {self.scores['Draw']}"
         )
 
+    def apply_player_name(self, name: Optional[str] = None) -> None:
+        """Update the player's display name from the entry or provided string."""
+        if name is not None:
+            self.player_name_var.set(name)
+        raw_name = self.player_name_var.get().strip()
+        self.player_name = raw_name if raw_name else "Player"
+        self.player_name_var.set(self.player_name)
+        self.score_label.config(text=self._score_text())
+        if not self.logic.game_over and self.logic.current_turn == "X":
+            self.status_label.config(text=self._turn_text(), fg="#89b4fa")
+        elif self.logic.game_over and self.logic.winner == "X":
+            self.status_label.config(
+                text=f"🎉 Winner: {self.player_name} (X) won the game!",
+                fg="#a6e3a1",
+            )
+
+    def change_background_color(
+        self, bg_color: Optional[str] = None, surface_color: Optional[str] = None
+    ) -> None:
+        """Cycle to the next background theme or apply a custom background color."""
+        if bg_color is not None:
+            self.bg_color = bg_color
+            self.surface_color = surface_color or self.surface_color
+        else:
+            self.theme_index = (self.theme_index + 1) % len(self.BG_THEMES)
+            _, self.bg_color, self.surface_color = self.BG_THEMES[self.theme_index]
+
+        self.root.configure(bg=self.bg_color)
+        for widget in (
+            self.title_label,
+            self.name_frame,
+            self.name_prompt_label,
+            self.score_label,
+            self.grid_frame,
+            self.controls_frame,
+        ):
+            widget.configure(bg=self.bg_color)
+
+        self.name_entry.configure(bg=self.surface_color)
+        self.status_label.configure(bg=self.surface_color)
+
+        winning_indices = set(self.logic.winning_line or ())
+        for idx, btn in enumerate(self.buttons):
+            if idx not in winning_indices:
+                btn.configure(bg=self.surface_color)
+
     def on_cell_click(self, index: int) -> None:
         """Handle player clicking a board cell."""
+        self.apply_player_name()
         if self.logic.game_over or self.logic.current_turn != "X":
             return
 
@@ -256,7 +379,7 @@ class TicTacToeApp:
             self._finish_game()
         else:
             self.status_label.config(
-                text="Your Turn (X) — Click any square", fg="#89b4fa"
+                text=self._turn_text(), fg="#89b4fa"
             )
 
     def _update_button(self, index: int, symbol: str) -> None:
@@ -276,7 +399,7 @@ class TicTacToeApp:
                 self.buttons[idx].config(bg=win_bg, fg="#11111b")
 
         if winner == "X":
-            msg = "🎉 Winner: You (X) won the game!"
+            msg = f"🎉 Winner: {self.player_name} (X) won the game!"
             self.status_label.config(text=msg, fg="#a6e3a1")
         elif winner == "O":
             msg = "🤖 Winner: Computer (O) won the game!"
@@ -289,9 +412,9 @@ class TicTacToeApp:
         """Start a fresh round of Tic Tac Toe."""
         self.logic.reset()
         for btn in self.buttons:
-            btn.config(text="", bg="#313244", fg="#cdd6f4")
+            btn.config(text="", bg=self.surface_color, fg="#cdd6f4")
         self.status_label.config(
-            text="Your Turn (X) — Click any square", fg="#89b4fa"
+            text=self._turn_text(), fg="#89b4fa"
         )
 
     def exit_game(self) -> None:
@@ -334,10 +457,24 @@ def run_self_test() -> int:
     game3.make_move(8, "X")
     assert game3.game_over is True and game3.winner == "Draw"
 
-    # 4. Test GUI creation, move simulation, reset, and Exit button
+    # 4. Test GUI creation, player name entry, background color change, move simulation, reset, and Exit button
     root = tk.Tk()
     app = TicTacToeApp(root)
     root.update_idletasks()
+
+    # Verify default changed background colour and cycling background colour
+    initial_bg = app.bg_color
+    assert initial_bg == "#162d3a" and root.cget("bg") == initial_bg
+    app.change_background_color()
+    assert app.bg_color != initial_bg and root.cget("bg") == app.bg_color
+
+    # Verify entering player name updates scoreboard and status labels
+    app.player_name_var.set("Alice")
+    app.apply_player_name()
+    assert app.player_name == "Alice"
+    assert "Alice (X):" in app.score_label.cget("text")
+    assert "Alice's Turn (X)" in app.status_label.cget("text")
+
     app.on_cell_click(4)  # Player clicks center
     root.update_idletasks()
     assert app.logic.board[4] == "X"

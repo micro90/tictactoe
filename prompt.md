@@ -1,7 +1,13 @@
-# Task Instructions
+# Implemented features
 
-your job is to create a simple Python executable that I can run as an executable it should show a simple screen of Tic Tac Toe and enable me to play simple games of Tic tac Toe with the computer by the end of the game the system should work out who is the winner Or there should be a button to press exit Make this as an executable 
+## Issue #1: change the background colour
+- New Deep Teal default theme (#162d3a background / #224254 surface) plus
+  selectable `BG_THEMES`; "Change BG" button in the bottom bar cycles themes.
 
+## Issue #2: enter player name
+- Player name input bar ("Set Name"); scoreboard, turn indicator, and winner
+  banner display the entered name via `apply_player_name`.
 
-as the software is being built I want to see stream back to the desktop events as you are working on this code to give me progress
-
+## Verification
+- `run_self_test` extended to assert theme cycling and player-name updates;
+  `python tictactoe.py --self-test` exits 0 (`SELF_TEST_PASSED`).
