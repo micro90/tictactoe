@@ -12,6 +12,9 @@ import tkinter as tk
 from tkinter import messagebox
 from typing import List, Optional, Tuple
 
+APP_VERSION: str = "1.3.0"
+__version__: str = APP_VERSION
+
 WINNING_COMBINATIONS: List[Tuple[int, int, int]] = [
     (0, 1, 2),  # Top row
     (3, 4, 5),  # Middle row
@@ -111,6 +114,8 @@ class TicTacToeLogic:
 class TicTacToeApp:
     """Graphical interface for playing Tic Tac Toe against the computer."""
 
+    VERSION: str = APP_VERSION
+
     BG_THEMES: List[Tuple[str, str, str]] = [
         ("Deep Teal", "#162d3a", "#224254"),
         ("Midnight Indigo", "#1b2240", "#29335c"),
@@ -121,7 +126,7 @@ class TicTacToeApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("Tic Tac Toe - Player vs Computer")
-        self.root.geometry("440x610")
+        self.root.geometry("440x640")
         self.root.resizable(False, False)
 
         self.theme_index: int = 0
@@ -132,21 +137,68 @@ class TicTacToeApp:
         self.logic = TicTacToeLogic()
         self.player_name: str = "Player"
         self.player_name_var = tk.StringVar(root, value=self.player_name)
+        self.dropdown_var = tk.StringVar(root, value="Menu ▾")
         self.scores = {"X": 0, "O": 0, "Draw": 0}
         self.buttons: List[tk.Button] = []
 
+        self._build_menu()
         self._build_ui()
 
+    def _build_menu(self) -> None:
+        """Create the application drop-down menu bar with a Version option."""
+        self.menu_bar = tk.Menu(self.root)
+        self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.help_menu.add_command(
+            label=f"Version (v{self.VERSION})",
+            command=self.show_version,
+        )
+        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
+        self.root.config(menu=self.menu_bar)
+
     def _build_ui(self) -> None:
-        # Title Label
+        # Top Header Frame with Title and Drop-down Menu
+        self.header_frame = tk.Frame(self.root, bg=self.bg_color)
+        self.header_frame.pack(fill="x", padx=24, pady=(10, 4))
+
         self.title_label = tk.Label(
-            self.root,
+            self.header_frame,
             text="Tic Tac Toe",
             font=("Segoe UI", 22, "bold"),
             fg="#cdd6f4",
             bg=self.bg_color,
         )
-        self.title_label.pack(pady=(12, 4))
+        self.title_label.pack(side="left")
+
+        self.version_dropdown = tk.OptionMenu(
+            self.header_frame,
+            self.dropdown_var,
+            f"Version: v{self.VERSION}",
+            "New Game",
+            "Change Theme",
+            "Exit",
+            command=self._on_dropdown_select,
+        )
+        self.version_dropdown.config(
+            font=("Segoe UI", 9, "bold"),
+            bg=self.surface_color,
+            fg="#cdd6f4",
+            activebackground="#45475a",
+            activeforeground="#cdd6f4",
+            highlightthickness=0,
+            relief="flat",
+            bd=0,
+            padx=8,
+            pady=4,
+            cursor="hand2",
+        )
+        self.version_dropdown["menu"].config(
+            font=("Segoe UI", 9),
+            bg=self.surface_color,
+            fg="#cdd6f4",
+            activebackground="#89b4fa",
+            activeforeground="#11111b",
+        )
+        self.version_dropdown.pack(side="right", pady=(6, 0))
 
         # Player Name Entry Row
         self.name_frame = tk.Frame(self.root, bg=self.bg_color)
@@ -330,6 +382,7 @@ class TicTacToeApp:
 
         self.root.configure(bg=self.bg_color)
         for widget in (
+            self.header_frame,
             self.title_label,
             self.name_frame,
             self.name_prompt_label,
@@ -341,11 +394,33 @@ class TicTacToeApp:
 
         self.name_entry.configure(bg=self.surface_color)
         self.status_label.configure(bg=self.surface_color)
+        self.version_dropdown.configure(bg=self.surface_color)
+        self.version_dropdown["menu"].configure(bg=self.surface_color)
 
         winning_indices = set(self.logic.winning_line or ())
         for idx, btn in enumerate(self.buttons):
             if idx not in winning_indices:
                 btn.configure(bg=self.surface_color)
+
+    def show_version(self, show_dialog: bool = True) -> str:
+        """Display the application version number and return the version string."""
+        version_text = f"Tic Tac Toe v{self.VERSION}"
+        self.status_label.config(text=f"ℹ️ {version_text}", fg="#89b4fa")
+        if show_dialog:
+            messagebox.showinfo("Application Version", version_text, parent=self.root)
+        return version_text
+
+    def _on_dropdown_select(self, selection: str) -> None:
+        """Handle selection from the header drop-down menu."""
+        self.dropdown_var.set("Menu ▾")
+        if selection.startswith("Version"):
+            self.show_version()
+        elif selection == "New Game":
+            self.reset_game()
+        elif selection == "Change Theme":
+            self.change_background_color()
+        elif selection == "Exit":
+            self.exit_game()
 
     def on_cell_click(self, index: int) -> None:
         """Handle player clicking a board cell."""
@@ -474,6 +549,17 @@ def run_self_test() -> int:
     assert app.player_name == "Alice"
     assert "Alice (X):" in app.score_label.cget("text")
     assert "Alice's Turn (X)" in app.status_label.cget("text")
+
+    # Verify version drop-down menu options and show_version behavior
+    assert app.VERSION == APP_VERSION and len(APP_VERSION) > 0
+    help_menu_label = app.help_menu.entrycget(0, "label")
+    assert APP_VERSION in help_menu_label, f"Expected version in Help menu label, got {help_menu_label}"
+    dropdown_menu = app.version_dropdown["menu"]
+    dropdown_first_label = dropdown_menu.entrycget(0, "label")
+    assert APP_VERSION in dropdown_first_label, f"Expected version in dropdown label, got {dropdown_first_label}"
+    version_output = app.show_version(show_dialog=False)
+    assert APP_VERSION in version_output
+    assert APP_VERSION in app.status_label.cget("text")
 
     app.on_cell_click(4)  # Player clicks center
     root.update_idletasks()
