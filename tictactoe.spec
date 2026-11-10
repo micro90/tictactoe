@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['c:/temp/b/tictactoe.py'],
+    ['tictactoe.py'],
     pathex=[],
     binaries=[],
     datas=[],
